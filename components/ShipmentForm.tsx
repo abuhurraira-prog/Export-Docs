@@ -23,18 +23,22 @@ export default function ShipmentForm({ buyers, products, userId }: { buyers: Buy
   const [shippingCharge, setShippingCharge] = useState(0);
   const [total, setTotal] = useState(0);
 
-  const updateLineItem = (index: number, field: keyof LineItem, value: any) => {
+  const updateLineItem = (index: number, field: keyof LineItem, value: string | number) => {
     const updated = [...lineItems];
     if (field === "productId") {
       const product = products.find(p => p.id === value);
-      updated[index].productId = value;
+      updated[index].productId = value as string;
       updated[index].unitPrice = product?.unitPrice || 0;
       updated[index].description = product?.name || "";
     } else if (field === "quantity") {
       const qty = typeof value === "number" && !isNaN(value) ? value : 1;
       updated[index].quantity = qty;
+    } else if (field === "unitPrice") {
+      const price = typeof value === "number" && !isNaN(value) ? value : 0;
+      updated[index].unitPrice = price;
     } else {
-      updated[index][field] = value;
+      // description field
+      updated[index][field] = value as string;
     }
     setLineItems(updated);
     recalcTotals(updated, discount, shippingCharge);
@@ -179,8 +183,19 @@ export default function ShipmentForm({ buyers, products, userId }: { buyers: Buy
                     className="border rounded w-24 p-1"
                   />
                 </td>
-                <td className="px-2 py-1">{item.unitPrice}</td>
-                <td className="px-2 py-1">{item.quantity * item.unitPrice}</td>
+                <td className="px-2 py-1">
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={item.unitPrice}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      updateLineItem(idx, "unitPrice", isNaN(val) ? 0 : val);
+                    }}
+                    className="border rounded w-24 p-1"
+                  />
+                </td>
+                <td className="px-2 py-1">{(item.quantity * item.unitPrice).toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
