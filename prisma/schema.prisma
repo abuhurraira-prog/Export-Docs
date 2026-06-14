@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  clerkId       String    @unique
+  email         String    @unique
+  name          String?
+  companyName   String?
+  companyAddress String?
+  companyVAT    String?
+  companyPhone  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  shipments     Shipment[]
+  buyers        Buyer[]
+  products      Product[]
+  documents     Document[]
+
+  @@index([clerkId])
+}
+
+model Buyer {
+  id            String    @id @default(cuid())
+  userId        String
+  companyName   String
+  contactPerson String?
+  email         String?
+  phone         String?
+  address       String
+  city          String
+  country       String
+  postalCode    String?
+  vatNumber     String?
+  paymentTerms  String?
+  shippingNotes String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shipments     Shipment[]
+
+  @@index([userId])
+}
+
+model Product {
+  id            String    @id @default(cuid())
+  userId        String
+  name          String
+  description   String?
+  hsCode        String?
+  unitPrice     Float
+  unitType      String    @default("PCS")
+  weightKg      Float?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shipmentItems ShipmentItem[]
+
+  @@index([userId])
+}
+
+model Shipment {
+  id              String    @id @default(cuid())
+  userId          String
+  buyerId         String
+  shipmentNumber  String    @unique
+  shipmentDate    DateTime  @default(now())
+  proformaNumber  String?
+  lcNumber        String?
+  portOfLoading   String?
+  portOfDischarge String?
+  incoterm        String    @default("FOB")
+  status          String    @default("DRAFT")
+  subtotal        Float
+  discount        Float     @default(0)
+  shippingCharge  Float     @default(0)
+  totalAmount     Float
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  buyer           Buyer     @relation(fields: [buyerId], references: [id])
+  items           ShipmentItem[]
+  documents       Document[]
+
+  @@index([userId])
+  @@index([shipmentNumber])
+}
+
+model ShipmentItem {
+  id          String    @id @default(cuid())
+  shipmentId  String
+  productId   String
+  quantity    Int
+  unitPrice   Float
+  totalPrice  Float
+  description String?
+  createdAt   DateTime  @default(now())
+
+  shipment    Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  product     Product   @relation(fields: [productId], references: [id])
+
+  @@index([shipmentId])
+}
+
+model Document {
+  id          String    @id @default(cuid())
+  userId      String
+  shipmentId  String
+  documentType String
+  documentUrl String
+  documentNumber String?
+  generatedAt DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shipment    Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId])
+  @@index([documentType])
+}
