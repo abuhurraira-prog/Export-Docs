@@ -13,7 +13,7 @@ interface LineItem {
   description: string;
 }
 
-export default function ShipmentForm({ buyers, products, userId }: { buyers: Buyer[]; products: Product[]; userId: string }) {
+export default function ShipmentForm({ buyers, products }: { buyers: Buyer[]; products: Product[]; userId: string }) {
   const router = useRouter();
   const [lineItems, setLineItems] = useState<LineItem[]>([
     { productId: "", quantity: 1, unitPrice: 0, description: "" },
@@ -22,6 +22,12 @@ export default function ShipmentForm({ buyers, products, userId }: { buyers: Buy
   const [discount, setDiscount] = useState(0);
   const [shippingCharge, setShippingCharge] = useState(0);
   const [total, setTotal] = useState(0);
+
+  const recalcTotals = (items: LineItem[], disc: number, ship: number) => {
+    const sub = items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0);
+    setSubtotal(sub);
+    setTotal(sub - disc + ship);
+  };
 
   const updateLineItem = (index: number, field: keyof LineItem, value: string | number) => {
     const updated = [...lineItems];
@@ -37,7 +43,6 @@ export default function ShipmentForm({ buyers, products, userId }: { buyers: Buy
       const price = typeof value === "number" && !isNaN(value) ? value : 0;
       updated[index].unitPrice = price;
     } else {
-      // description field
       updated[index][field] = value as string;
     }
     setLineItems(updated);
@@ -48,20 +53,16 @@ export default function ShipmentForm({ buyers, products, userId }: { buyers: Buy
     setLineItems([...lineItems, { productId: "", quantity: 1, unitPrice: 0, description: "" }]);
   };
 
-  const recalcTotals = (items: LineItem, disc: number, ship: number) => {
-    const sub = items.reduce((sum, i) => sum + (i.quantity * i.unitPrice), 0);
-    setSubtotal(sub);
-    setTotal(sub - disc + ship);
-  };
-
   const handleDiscountChange = (val: number) => {
-    setDiscount(isNaN(val) ? 0 : val);
-    recalcTotals(lineItems, isNaN(val) ? 0 : val, shippingCharge);
+    const disc = isNaN(val) ? 0 : val;
+    setDiscount(disc);
+    recalcTotals(lineItems, disc, shippingCharge);
   };
 
   const handleShippingChange = (val: number) => {
-    setShippingCharge(isNaN(val) ? 0 : val);
-    recalcTotals(lineItems, discount, isNaN(val) ? 0 : val);
+    const ship = isNaN(val) ? 0 : val;
+    setShippingCharge(ship);
+    recalcTotals(lineItems, discount, ship);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
